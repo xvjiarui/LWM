@@ -1065,7 +1065,7 @@ def _flash_attention_impl(
             pl.BlockSpec(lambda *_: (0, 0, 0, 0), acc_scratch.shape),
         ]
     else:
-        assert False, f"block_k={block_k} should be equal to kv_seq_len={kv_seq_len}"
+        assert False, f"block_k={block_k} should not be equal to kv_seq_len={kv_seq_len}"
         out_shape += [None, None, None]
         out_specs += [None, None, None]
 
