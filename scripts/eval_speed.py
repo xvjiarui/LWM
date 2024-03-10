@@ -172,9 +172,10 @@ class Sampler:
             _, self.params = StreamingCheckpointer.load_trainstate_checkpoint(
                     FLAGS.load_checkpoint, disallow_trainstate=True, max_buffer_size=32 * 2 ** 30
             )
+            print('init block_size', self.block_size)
             self.model = FlaxLLaMAForCausalLM(
                 llama_config,
-                input_shape=(1, 2**11),
+                input_shape=(1, self.block_size),
                 seed=FLAGS.seed,
                 _do_init=False,
                 dtype=get_float_dtype_by_name(FLAGS.dtype),
