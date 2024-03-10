@@ -27,6 +27,7 @@ FLAGS, FLAGS_DEF = define_flags_with_default(
     context_lengths_min=1000,
     context_lengths_max=32000,
     n_context_length_intervals=3,
+    n_rounds=3,
     seed=1234,
     mesh_dim='1,-1,1,1',
     dtype='fp32',
@@ -46,10 +47,12 @@ class LLMPrefillTester:
                  context_lengths_min = 1000,
                  context_lengths_max = 126000,
                  context_lengths_num_intervals = 10,
+                 n_rounds = 3,
                  print_ongoing_status = True):
 
         self.context_lengths_num_intervals = context_lengths_num_intervals
         self.context_lengths = np.round(np.linspace(context_lengths_min, context_lengths_max, num=context_lengths_num_intervals, endpoint=True)).astype(int)
+        self.context_lengths = np.repeat(self.context_lengths, n_rounds)
         self.print_ongoing_status = print_ongoing_status
         self.testing_results = []
 
@@ -67,10 +70,11 @@ class LLMPrefillTester:
         contexts = []
 
         full_context = '\s' * 2_000_000
+        full_token = self.enc.encode(full_context)
 
         start = time.time()
         for context_length in self.context_lengths:
-            contexts = [full_context]
+            contexts = [self.enc.decode(full_token[:context_length])]
 
             if len(contexts) == 0:
                 continue
@@ -92,8 +96,10 @@ class LLMPrefillTester:
             pbar = tqdm(total=len(contexts))
             for i in range(0, len(contexts), B):
                 contexts_i = contexts[i:i + B]
-                prompts = '\s' * 2_000_000
-                outs = self.model(prompts, max_input_length)
+                cur_start = time.time()
+                outs = self.model(contexts_i, max_input_length)
+                print(f'context_length: {context_length}, batch_size: {len(contexts_i)}, elapsed: {time.time() - cur_start:.2f}s')
+                print('outs', outs)
                 pbar.update(len(contexts_i))
             pbar.close()
         print('elapsed', time.time() - start)
@@ -122,6 +128,7 @@ class Sampler:
         self.tokenizer = LLaMAConfig.get_tokenizer(FLAGS.tokenizer)
         self.sharded_rng = next_rng()
         self._load_model()
+        print('block_size', self.block_size)
 
     @property
     def block_size(self):
@@ -193,7 +200,7 @@ class Sampler:
                 params=params['params'],
                 prng_key=rng_generator(),
                 generation_config=GenerationConfig(
-                    max_length=128,
+                    min_new_tokens=128,
                     max_new_tokens=self.block_size,
                     pad_token_id=self.tokenizer.pad_token_id,
                     eos_token_id=self.tokenizer.eos_token_id,
@@ -229,6 +236,7 @@ class Sampler:
                 self.params, self.sharded_rng, batch
             )
             output = jax.device_get(output)
+        print('='*80, output.shape)
         output_text = []
         for text in list(self.tokenizer.batch_decode(output, skip_special_tokens=True)):
             if self.tokenizer.eos_token in text:
@@ -245,6 +253,7 @@ def main(argv):
         context_lengths_min=FLAGS.context_lengths_min,
         context_lengths_max=FLAGS.context_lengths_max,
         context_lengths_num_intervals=FLAGS.n_context_length_intervals,
+        n_rounds=FLAGS.n_rounds,
     )
     ht.start_test()
 
