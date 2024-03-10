@@ -16,7 +16,7 @@ python3 -u scripts/eval_speed.py \
     --load_checkpoint="params::$lwm_text_checkpoint" \
     --tokenizer.vocab_file="$llama_tokenizer_path" \
     --max_tokens_per_batch=1000000 \
-    --context_lengths_min=100000 \
+    --context_lengths_min=10000 \
     --n_context_length_intervals=10 \
     --context_lengths_max=1000000 \
 read
