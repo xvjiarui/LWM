@@ -175,7 +175,7 @@ class Sampler:
             print('init block_size', self.block_size)
             self.model = FlaxLLaMAForCausalLM(
                 llama_config,
-                input_shape=(1, self.block_size),
+                input_shape=(1, self.block_size * 2),
                 seed=FLAGS.seed,
                 _do_init=False,
                 dtype=get_float_dtype_by_name(FLAGS.dtype),
