@@ -174,7 +174,7 @@ class Sampler:
             )
             self.model = FlaxLLaMAForCausalLM(
                 llama_config,
-                input_shape=(512, self.block_size),
+                input_shape=(1, self.block_size),
                 seed=FLAGS.seed,
                 _do_init=False,
                 dtype=get_float_dtype_by_name(FLAGS.dtype),
