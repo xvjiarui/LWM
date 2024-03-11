@@ -60,7 +60,8 @@ class LLMGenTester:
         self.testing_results = []
 
         self.model = Sampler()
-        self.context_lengths = [self.model.block_size * 16]
+        # self.context_lengths = [self.model.block_size * 32]
+        self.context_lengths = [0]
 
         self.enc = LLaMAConfig.get_tokenizer(FLAGS.tokenizer)
 
@@ -101,12 +102,12 @@ class LLMGenTester:
                 contexts_i = contexts[i:i + B]
                 last_decode_length = None
                 for decode_length in self.decode_lengths:
-                    cur_start = time.time()
                     if last_decode_length != decode_length:
                         if jax.process_index() == 0:
                             print('new min_new_tokens', decode_length)
                         self.model = Sampler(min_new_tokens=decode_length)
                         last_decode_length = decode_length
+                    cur_start = time.time()
                     outs = self.model(contexts_i, max_input_length)
                     if jax.process_index() == 0:
                         print(f'decode_length: {decode_length} context_length: {context_length}, batch_size: {len(contexts_i)}, elapsed: {time.time() - cur_start:.2f}s')
