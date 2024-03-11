@@ -60,7 +60,7 @@ class LLMGenTester:
         self.testing_results = []
 
         self.model = Sampler()
-        self.context_lengths = [self.model.block_size]
+        self.context_lengths = [self.model.block_size * 2]
 
         self.enc = LLaMAConfig.get_tokenizer(FLAGS.tokenizer)
 
@@ -218,7 +218,8 @@ class Sampler:
         def fn(params, rng, batch):
             batch = with_sharding_constraint(batch, PS(('dp', 'fsdp'), 'sp'))
             rng_generator = JaxRNG(rng)
-            print('self.min_new_tokens', self.min_new_tokens)
+            if jax.process_index() == 0:
+                print('self.min_new_tokens', self.min_new_tokens)
             output = self.model.generate(
                 batch['input_ids'],
                 attention_mask=batch['attention_mask'],
