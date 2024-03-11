@@ -60,8 +60,7 @@ class LLMGenTester:
         self.testing_results = []
 
         self.model = Sampler()
-        # self.context_lengths = [self.model.block_size * 32]
-        self.context_lengths = [0]
+        self.context_lengths = [self.model.block_size * 32]
 
         self.enc = LLaMAConfig.get_tokenizer(FLAGS.tokenizer)
 
