@@ -60,7 +60,7 @@ class LLMGenTester:
         self.testing_results = []
 
         self.model = Sampler()
-        self.context_lengths = [self.model.block_size * 32]
+        self.context_lengths = [self.model.block_size * 64]
 
         self.enc = LLaMAConfig.get_tokenizer(FLAGS.tokenizer)
 
@@ -229,7 +229,7 @@ class Sampler:
                     min_new_tokens=self.min_new_tokens,
                     max_new_tokens=self.min_new_tokens,
                     pad_token_id=self.tokenizer.pad_token_id,
-                    eos_token_id=self.tokenizer.eos_token_id,
+                    eos_token_id=None,
                     temperature=0.,
                     do_sample=False,
                     num_beams=1,

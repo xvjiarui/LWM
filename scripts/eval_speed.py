@@ -207,7 +207,7 @@ class Sampler:
                     min_new_tokens=128,
                     max_new_tokens=self.block_size,
                     pad_token_id=self.tokenizer.pad_token_id,
-                    eos_token_id=self.tokenizer.eos_token_id,
+                    eos_token_id=None,
                     temperature=0.,
                     do_sample=False,
                     num_beams=1,
