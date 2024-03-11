@@ -99,8 +99,13 @@ class LLMGenTester:
             for i in range(0, len(contexts), B):
                 contexts_i = contexts[i:i + B]
                 cur_start = time.time()
+                last_decode_length = None
                 for decode_length in self.decode_lengths:
-                    self.model.min_new_tokens = decode_length
+                    if last_decode_length != decode_length:
+                        if jax.process_index() == 0:
+                            print('new min_new_tokens', decode_length)
+                        self.model = Sampler(min_new_tokens=decode_length)
+                        last_decode_length = decode_length
                     outs = self.model(contexts_i, max_input_length)
                     if jax.process_index() == 0:
                         print(f'decode_length: {decode_length} context_length: {context_length}, batch_size: {len(contexts_i)}, elapsed: {time.time() - cur_start:.2f}s')
@@ -134,7 +139,6 @@ class Sampler:
         self._min_new_tokens = (min_new_tokens + self.block_size) // self.block_size * self.block_size
         if jax.process_index() == 0:
             print('block_size', self.block_size)
-            print('min_new_tokens', self.min_new_tokens)
     @property
     def min_new_tokens(self):
         return self._min_new_tokens
@@ -213,6 +217,7 @@ class Sampler:
         def fn(params, rng, batch):
             batch = with_sharding_constraint(batch, PS(('dp', 'fsdp'), 'sp'))
             rng_generator = JaxRNG(rng)
+            print('self.min_new_tokens', self.min_new_tokens)
             output = self.model.generate(
                 batch['input_ids'],
                 attention_mask=batch['attention_mask'],
