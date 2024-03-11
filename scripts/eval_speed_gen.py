@@ -51,7 +51,8 @@ class LLMGenTester:
                  print_ongoing_status = True):
 
         self.decode_lengths_num_intervals = decode_lengths_num_intervals
-        self.decode_lengths = np.round(np.linspace(decode_lengths_min, decode_lengths_max, num=decode_lengths_num_intervals, endpoint=True)).astype(int)
+        # self.decode_lengths = np.round(np.linspace(decode_lengths_min, decode_lengths_max, num=decode_lengths_num_intervals, endpoint=True)).astype(int)
+        self.decode_lengths = np.round(np.exp2(np.linspace(np.log2(decode_lengths_min), np.log2(decode_lengths_max), num=decode_lengths_num_intervals, endpoint=True))).astype(int)
         if jax.process_index() == 0:
             print('decode_lengths', self.decode_lengths)
         self.decode_lengths = np.repeat(self.decode_lengths, n_rounds)

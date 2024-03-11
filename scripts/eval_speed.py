@@ -51,7 +51,8 @@ class LLMPrefillTester:
                  print_ongoing_status = True):
 
         self.context_lengths_num_intervals = context_lengths_num_intervals
-        self.context_lengths = np.round(np.linspace(context_lengths_min, context_lengths_max, num=context_lengths_num_intervals, endpoint=True)).astype(int)
+        # self.context_lengths = np.round(np.linspace(context_lengths_min, context_lengths_max, num=context_lengths_num_intervals, endpoint=True)).astype(int)
+        self.context_lengths = np.round(np.exp2(np.linspace(np.log2(context_lengths_min), np.log2(context_lengths_max), num=context_lengths_num_intervals, endpoint=True))).astype(int)
         if jax.process_index() == 0:
             print('context_lengths', self.context_lengths)
         self.context_lengths = np.repeat(self.context_lengths, n_rounds)
