@@ -52,6 +52,8 @@ class LLMPrefillTester:
 
         self.context_lengths_num_intervals = context_lengths_num_intervals
         self.context_lengths = np.round(np.linspace(context_lengths_min, context_lengths_max, num=context_lengths_num_intervals, endpoint=True)).astype(int)
+        if jax.process_index() == 0:
+            print('context_lengths', self.context_lengths)
         self.context_lengths = np.repeat(self.context_lengths, n_rounds)
         self.print_ongoing_status = print_ongoing_status
         self.testing_results = []
@@ -93,17 +95,15 @@ class LLMPrefillTester:
             for _ in range(n_pad):
                 contexts.insert(0, contexts[0])
 
-            pbar = tqdm(total=len(contexts))
             for i in range(0, len(contexts), B):
                 contexts_i = contexts[i:i + B]
                 cur_start = time.time()
                 outs = self.model(contexts_i, max_input_length)
-                print(f'context_length: {context_length}, batch_size: {len(contexts_i)}, elapsed: {time.time() - cur_start:.2f}s')
-                print('outs', outs)
-                pbar.update(len(contexts_i))
-            pbar.close()
-        print('elapsed', time.time() - start)
-        print('done')
+                if jax.process_index() == 0:
+                    print(f'context_length: {context_length}, batch_size: {len(contexts_i)}, elapsed: {time.time() - cur_start:.2f}s')
+        if jax.process_index() == 0:
+            print('elapsed', time.time() - start)
+            print('done')
 
 
     def print_start_test_summary(self):
@@ -113,7 +113,7 @@ class LLMPrefillTester:
         print ("\n\n")
 
     def start_test(self):
-        if self.print_ongoing_status:
+        if self.print_ongoing_status and jax.process_index() == 0:
             self.print_start_test_summary()
         self.run_test()
 
@@ -128,7 +128,8 @@ class Sampler:
         self.tokenizer = LLaMAConfig.get_tokenizer(FLAGS.tokenizer)
         self.sharded_rng = next_rng()
         self._load_model()
-        print('block_size', self.block_size)
+        if jax.process_index() == 0:
+            print('block_size', self.block_size)
 
     @property
     def block_size(self):
@@ -172,7 +173,8 @@ class Sampler:
             _, self.params = StreamingCheckpointer.load_trainstate_checkpoint(
                     FLAGS.load_checkpoint, disallow_trainstate=True, max_buffer_size=32 * 2 ** 30
             )
-            print('init block_size', self.block_size)
+            if jax.process_index() == 0:
+                print('init block_size', self.block_size)
             self.model = FlaxLLaMAForCausalLM(
                 llama_config,
                 input_shape=(1, self.block_size * 2),
@@ -227,7 +229,8 @@ class Sampler:
             max_length=max_input_length,
             return_tensors='np'
         )
-        print('inputs.input_ids.shape', inputs.input_ids.shape)
+        if jax.process_index() == 0:
+            print('inputs.input_ids.shape', inputs.input_ids.shape)
         batch = dict(
             input_ids=inputs.input_ids,
             attention_mask=inputs.attention_mask
@@ -237,7 +240,8 @@ class Sampler:
                 self.params, self.sharded_rng, batch
             )
             output = jax.device_get(output)
-        print('='*80, output.shape)
+        if jax.process_index() == 0:
+            print('output.shape', output.shape)
         output_text = []
         for text in list(self.tokenizer.batch_decode(output, skip_special_tokens=True)):
             if self.tokenizer.eos_token in text:
